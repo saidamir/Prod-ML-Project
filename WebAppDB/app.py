@@ -1,10 +1,10 @@
+import uvicorn
 import dotenv
 from fastapi import FastAPI
 import psycopg2
 import os
 from psycopg2.extensions import connection
 from psycopg2.extras import RealDictCursor
-
 from dotenv import load_dotenv
 
 app = FastAPI()
@@ -19,7 +19,7 @@ def sum_two(a: int, b: int)-> int:
 @app.get("/booking/all")
 def all_bookings():
     conn = psycopg2.connect("/PATH/")
-    cursor = connect.cursor()
+    cursor = conn.cursor()
     cursor.execute(
         """
         SELECT *
