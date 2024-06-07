@@ -1,5 +1,12 @@
+import dotenv
 from fastapi import FastAPI
 import psycopg2
+import os
+from psycopg2.extensions import connection
+from psycopg2.extras import RealDictCursor
+
+from dotenv import load_dotenv
+
 app = FastAPI()
 @app.get("/")
 def read_root():
@@ -20,3 +27,8 @@ def all_bookings():
         """
 )
     return cursor.fetchall()
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    uvicorn.run(app)
