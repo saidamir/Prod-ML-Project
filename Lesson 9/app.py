@@ -28,7 +28,6 @@ def all_bookings():
 )
     return cursor.fetchall()
 
-
 if __name__ == "__main__":
     load_dotenv()
     uvicorn.run(app)
