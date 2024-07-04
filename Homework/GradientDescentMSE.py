@@ -1,3 +1,6 @@
+from sklearn.linear_model import LinearRegression
+import pandas as pd
+import numpy as np
 '''
 Tеперь вам необходимо реализовать класс для оптимизации коэффициентов линейной регрессии МНК.
 Подразумевается, что на вход алгоритм будет принимать следующие параметры:\
@@ -14,13 +17,14 @@ Tеперь вам необходимо реализовать класс для
 - **calculate_gradient**: вычисляет при текущих весах вектор-градиент по функционалу.
 - **iteration**: производит итерацию градиентного спуска, то есть обновляет веса модели, в соответствии с 
 установленным **learning_rate = $\eta$**: $\beta^{(n+1)} = \beta^{(n)} - \eta \cdot \nabla Q(\beta^{(n)})$
-- **learn**: производит итерации обучения до того момента, пока не сработает критерий останова обучения. В этот раз критерием останова будет следующее событие: во время крайней итерации изменение в функционале качества модели составило значение меньшее, чем **self.threshold**. Иными словами, $|Q(\beta^{(n+1)}) - Q(\beta^{(n+1)})| < threshold$.
+- **learn**: производит итерации обучения до того момента, пока не сработает критерий останова обучения.
+ В этот раз критерием останова будет следующее событие: во время крайней итерации изменение в функционале 
+ качества модели составило значение меньшее, чем **self.threshold**. 
+ Иными словами, $|Q(\beta^{(n+1)}) - Q(\beta^{(n+1)})| < threshold$.
 P.S. установите в **__init__** аттрибут экземпляра с названием **iteration_loss_dict**, который будет устроен следующим 
 образом: на каждой итерации мы будем добавлять в словарь пару ключ-значение, где ключем будет номер итерации $n$, 
 а значением - среднеквадратическая ошибка в точке $\beta^{(n)}$. Это пригодится нам в будущем для визуализации.
 '''
-import pandas as pd
-import numpy as np
 
 class GradientDescentMse:
 
@@ -37,32 +41,80 @@ class GradientDescentMse:
         self.beta = np.ones(self.samples.shape[1])
         self.iteration_num = 0
 
-    def add_constant_feature(self, samples):
+    def add_constant_feature(self):
         self.samples['constant'] = 1
         self.beta = np.append(self.beta, 1)
         return self.samples, self.beta
 
-    def calculate_mse_loss(self, samples, targets):
-        self.mse_loss = np.mean((targets - samples.dot(self.beta))**2)
+    def calculate_mse_loss(self): #, samples, targets):
+        self.mse_loss = np.mean((self.targets - self.samples.dot(self.beta))**2)
         return self.mse_loss
     
-    def calculate_gradient(self, samples, targets):
+    def calculate_gradient(self):
         #self.gradient = -2 * self.samples.T.dot(self.targets - self.samples.dot(self.beta))
-       
-        shift = np.dot(self.samples, self.beta)  - self.targets.values
-        self.gradient = 2 * np.dot(shift, self.samples) / self.samples.shape[0]
+        #see the formual in the task
+        shift = self.samples.dot(self.beta)  - self.targets.values
+        self.gradient = 2 * shift.dot(self.samples) / self.samples.shape[0]
         return self.gradient
 
-    def iteration(self, samples, targets):
-        for i in range(1000):
-            self.beta -= self.learning_rate * self.calculate_gradient(samples, targets)
-            self.iterations_loss_dict[i] = self.calculate_mse_loss(samples, targets)
+    def iteration(self):
+        #for i in range(1000):
+        #while self.learning_rate * self.calculate_gradient(samples, targets) > self.threshold:
+        self.beta -= self.learning_rate * self.calculate_gradient()
+            #self.iterations_loss_dict[i] = self.calculate_mse_loss(samples, targets)
 
-        return self.beta, self.iterations_loss_dict
+        return self.beta #, self.iterations_loss_dict
 
-    def learn(self, samples, targets):
+    '''def learn(self, samples, targets):
         self.samples = samples
         self.targets = targets
         self.beta = np.zeros(samples.shape[1])
         self.iteration(samples, targets)
-        return self.beta, self.iterations
+        return self.beta
+    '''
+    def learn(self):
+        """
+        Итеративное обучение весов модели до срабатывания критерия останова
+        """
+        previous_mse = self.calculate_mse_loss()
+        
+        self.iteration()
+        
+        next_mse = self.calculate_mse_loss()
+        
+        self.iterations_loss_dict[0] = previous_mse
+        self.iterations_loss_dict[1] = next_mse
+        
+        self.iteration_num = 1
+        
+        while abs(next_mse - previous_mse) >= self.threshold:
+            
+            previous_mse = next_mse
+            
+            self.iteration()
+            
+            next_mse = self.calculate_mse_loss()
+            
+            self.iterations_loss_dict[self.iteration_num+1] = next_mse
+            
+            self.iteration_num += 1
+
+        return self.beta
+data = pd.read_csv('/Users/kamasam/Documents/Start ML/2 Linear regression/4 data.csv')
+
+print(data.head())
+
+### Your code is here
+
+X = data.drop('target', axis=1)
+Y = data['target']
+
+model = LinearRegression()
+model.fit(X, Y)
+
+print('Scikit coef: ', model.coef_)
+print('Scikit intercept: ', float(model.intercept_))
+
+model = GradientDescentMse(X, Y)
+model.add_constant_feature()
+print ('GD class beta: ', model.learn())
